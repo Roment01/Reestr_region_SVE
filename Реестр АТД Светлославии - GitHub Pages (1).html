@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
+
     <style>
         :root {
             --primary-navy: #1f4e78;
@@ -19,6 +19,11 @@
             --accent-green: #16a34a;
             --accent-red: #dc2626;
             --accent-blue: #2563eb;
+            --surface: #ffffff;
+            --bg: #f1f5f9;
+            --muted: #64748b;
+            --shadow-soft: 0 10px 15px -3px rgba(15, 23, 42, 0.08);
+            --shadow-card: 0 4px 10px rgba(15, 23, 42, 0.06);
         }
 
         * {
@@ -27,19 +32,23 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
+            background: linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
             color: #1e293b;
             padding: 24px;
             min-height: 100vh;
         }
 
         .header-container {
-            background-color: #ffffff;
-            border-radius: 12px;
-            padding: 24px 32px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            background-color: var(--surface);
+            border-radius: 14px;
+            padding: 24px 30px;
+            box-shadow: var(--shadow-card);
             margin-bottom: 20px;
             border-left: 6px solid var(--primary-navy);
             display: flex;
@@ -50,29 +59,32 @@
         }
 
         .header-title {
-            font-size: 22px;
+            font-size: clamp(18px, 2vw, 24px);
             font-weight: 700;
             color: var(--primary-navy);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .header-subtitle {
             font-size: 13px;
-            color: #64748b;
+            color: var(--muted);
+            line-height: 1.5;
+            max-width: 780px;
         }
 
         .badge-gh {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            background-color: #0f172a;
+            gap: 8px;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
             color: #ffffff;
-            padding: 6px 12px;
-            border-radius: 20px;
+            padding: 8px 14px;
+            border-radius: 999px;
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
+            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
         }
 
         .toolbar {
@@ -81,30 +93,38 @@
             margin-bottom: 16px;
             flex-wrap: wrap;
             align-items: center;
-            background: #ffffff;
+            background: rgba(255, 255, 255, 0.9);
             padding: 12px 16px;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-soft);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
-            padding: 8px 14px;
+            padding: 9px 14px;
             font-size: 13px;
             font-weight: 600;
-            border-radius: 6px;
+            border-radius: 8px;
             border: none;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
         }
 
         .btn-primary {
             background-color: var(--primary-navy);
             color: #ffffff;
         }
+
         .btn-primary:hover {
             background-color: var(--primary-navy-dark);
         }
@@ -113,6 +133,7 @@
             background-color: var(--accent-green);
             color: #ffffff;
         }
+
         .btn-success:hover {
             background-color: #15803d;
         }
@@ -122,6 +143,7 @@
             color: #334155;
             border: 1px solid var(--border-color);
         }
+
         .btn-secondary:hover {
             background-color: #f8fafc;
             border-color: #94a3b8;
@@ -132,6 +154,7 @@
             color: var(--accent-red);
             border: 1px solid #fca5a5;
         }
+
         .btn-danger:hover {
             background-color: #fef2f2;
         }
@@ -139,21 +162,24 @@
         .search-box {
             position: relative;
             margin-left: auto;
-            min-width: 240px;
+            min-width: min(100%, 260px);
+            flex: 1 1 220px;
         }
 
         .search-box input {
             width: 100%;
-            padding: 8px 12px 8px 34px;
-            border-radius: 6px;
+            padding: 9px 12px 9px 34px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
             font-size: 13px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
         }
 
         .search-box input:focus {
             border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
 
         .search-box i {
@@ -165,36 +191,11 @@
             font-size: 13px;
         }
 
-        .status-toast {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background-color: #0f172a;
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 100;
-        }
-
-        .status-toast.visible {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
         .table-wrapper {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-            overflow-x: auto;
+            background-color: var(--surface);
+            border-radius: 14px;
+            box-shadow: var(--shadow-soft);
+            overflow: auto;
             border: 1px solid var(--border-color);
             max-height: 68vh;
         }
@@ -241,6 +242,7 @@
             background-color: #ffffff;
             outline: none;
             transition: background-color 0.15s ease;
+            min-height: 42px;
         }
 
         tbody td[contenteditable="true"]:focus {
@@ -258,12 +260,13 @@
             color: #64748b;
             background-color: #f8fafc;
             user-select: none;
-            width: 50px;
+            width: 52px;
         }
 
         td.action-col {
             text-align: center;
-            width: 40px;
+            width: 42px;
+            background-color: #f8fafc;
         }
 
         .btn-del-row {
@@ -273,7 +276,9 @@
             cursor: pointer;
             padding: 4px;
             font-size: 14px;
+            transition: color 0.2s ease;
         }
+
         .btn-del-row:hover {
             color: var(--accent-red);
         }
@@ -283,13 +288,69 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
             font-size: 12px;
-            color: #64748b;
+            color: var(--muted);
             padding: 0 4px;
         }
 
         .file-input-hidden {
             display: none;
+        }
+
+        .status-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: rgba(15, 23, 42, 0.96);
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.28);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .status-toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .header-container,
+            .toolbar {
+                border-radius: 10px;
+            }
+
+            .header-container {
+                padding: 18px 20px;
+            }
+
+            .toolbar {
+                padding: 10px 12px;
+            }
+
+            .btn {
+                flex: 1 1 calc(50% - 10px);
+            }
+
+            .search-box {
+                flex: 1 1 100%;
+                margin-left: 0;
+            }
         }
     </style>
 </head>
@@ -298,7 +359,7 @@
     <div class="header-container">
         <div>
             <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
-            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий</p>
+            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий, пригодный для ведения, экспорта и архивного хранения данных.</p>
         </div>
         <div class="badge-gh">
             <i class="fa-brands fa-github"></i> GitHub Pages Ready
@@ -335,7 +396,6 @@
     <div class="table-wrapper">
         <table id="registryTable">
             <thead>
-                <!-- Строка 1: Номера показателей -->
                 <tr class="header-row-numbers">
                     <th style="width: 40px;"></th>
                     <th style="width: 50px;">№</th>
@@ -350,7 +410,6 @@
                     <th>8</th>
                     <th>9</th>
                 </tr>
-                <!-- Строка 2: Названия столбцов -->
                 <tr class="header-row-titles">
                     <th></th>
                     <th>№ п/п</th>
@@ -366,14 +425,12 @@
                     <th style="min-width: 180px;">Примечания / Особые отметки</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Динамические строки таблицы -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 
     <div class="footer-info">
-        <span><i class="fa-solid fa-floppy-disk"></i> Изменения сохраняются автоматически в вашем браузере</span>
+        <span><i class="fa-solid fa-floppy-disk"></i> Изменения сохраняются автоматически в вашем брау��ере</span>
         <span id="rowCountDisplay">Всего записей: 0</span>
     </div>
 
@@ -388,26 +445,35 @@
         const statusToast = document.getElementById('statusToast');
         const statusToastText = document.getElementById('statusToastText');
 
+        const DEFAULT_EMPTY_ROWS = 5;
+        let toastTimer = null;
+
+        function normalizeCellValue(value) {
+            return String(value ?? '').replace(/\r?\n/g, ' ').trim();
+        }
+
+        function isRowEmpty(rowValues) {
+            return !rowValues.some(value => normalizeCellValue(value).length > 0);
+        }
+
         function createRowData(index, values = Array(10).fill('')) {
             const tr = document.createElement('tr');
-            
-            // Action Cell (Delete)
+
             const tdAction = document.createElement('td');
             tdAction.className = 'action-col';
-            tdAction.innerHTML = `<button class="btn-del-row" onclick="deleteRow(this)" title="Удалить строку"><i class="fa-solid fa-xmark"></i></button>`;
+            tdAction.innerHTML = '<button class="btn-del-row" onclick="deleteRow(this)" title="Удалить строку"><i class="fa-solid fa-xmark"></i></button>';
             tr.appendChild(tdAction);
 
-            // Index Cell
             const tdNum = document.createElement('td');
             tdNum.className = 'col-num';
             tdNum.innerText = index;
             tr.appendChild(tdNum);
 
-            // 10 Editable Cells (ID + 9 Metrics)
             for (let i = 0; i < 10; i++) {
                 const td = document.createElement('td');
-                td.contentEditable = "true";
-                td.innerText = values[i] || '';
+                td.contentEditable = 'true';
+                td.dataset.columnIndex = String(i);
+                td.innerText = normalizeCellValue(values[i]);
                 td.addEventListener('input', autoSave);
                 tr.appendChild(td);
             }
@@ -415,16 +481,26 @@
             return tr;
         }
 
+        function renderRows(rowsData) {
+            tableBody.innerHTML = '';
+            rowsData.forEach((rowVals, idx) => {
+                const normalized = Array.from({ length: 10 }, (_, colIndex) => normalizeCellValue(rowVals[colIndex] ?? ''));
+                tableBody.appendChild(createRowData(idx + 1, normalized));
+            });
+            reindexRows();
+            updateRowCount();
+        }
+
         function addRow(values = Array(10).fill('')) {
             const nextIdx = tableBody.rows.length + 1;
-            const tr = createRowData(nextIdx, values);
-            tableBody.appendChild(tr);
+            tableBody.appendChild(createRowData(nextIdx, values));
             updateRowCount();
             autoSave();
         }
 
         function deleteRow(btn) {
             const row = btn.closest('tr');
+            if (!row) return;
             row.remove();
             reindexRows();
             autoSave();
@@ -441,30 +517,33 @@
             document.getElementById('rowCountDisplay').innerText = `Всего записей: ${tableBody.rows.length}`;
         }
 
-        function autoSave() {
+        function getTableData() {
             const rowsData = [];
             Array.from(tableBody.rows).forEach(row => {
                 const rowValues = [];
                 for (let i = 2; i < row.cells.length; i++) {
-                    rowValues.push(row.cells[i].innerText);
+                    rowValues.push(normalizeCellValue(row.cells[i].innerText));
                 }
                 rowsData.push(rowValues);
             });
+            return rowsData;
+        }
+
+        function autoSave() {
+            const rowsData = getTableData().filter(row => !isRowEmpty(row));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(rowsData));
         }
 
         function loadFromLocalStorage() {
             const saved = localStorage.getItem(STORAGE_KEY);
             tableBody.innerHTML = '';
-            
+
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
                     if (Array.isArray(parsed) && parsed.length > 0) {
-                        parsed.forEach((rowVals, idx) => {
-                            tableBody.appendChild(createRowData(idx + 1, rowVals));
-                        });
-                        updateRowCount();
+                        const rows = parsed.map(row => Array.from({ length: 10 }, (_, idx) => row[idx] || ''));
+                        renderRows(rows);
                         return;
                     }
                 } catch (e) {
@@ -472,97 +551,89 @@
                 }
             }
 
-            // Инициализация 5 пустых строк по умолчанию
-            for (let i = 1; i <= 5; i++) {
+            for (let i = 1; i <= DEFAULT_EMPTY_ROWS; i++) {
                 tableBody.appendChild(createRowData(i));
             }
             updateRowCount();
         }
 
+        function getVisibleRows() {
+            return Array.from(tableBody.rows).filter(row => row.style.display !== 'none');
+        }
+
         function copyForGoogleSheets() {
             const rows = [];
-            
-            // Строка 1: Номера показателей
-            rows.push(["№", "Наименование показателя", "1", "2", "3", "4", "5", "6", "7", "8", "9"].join("\t"));
-
-            // Строка 2: Названия столбцов
+            rows.push(['№', 'Наименование показателя', '1', '2', '3', '4', '5', '6', '7', '8', '9'].join('\t'));
             rows.push([
-                "№ п/п",
-                "Реестровый идентификатор",
-                "Наименование",
-                "Категория и уровень",
-                "Административный центр",
-                "Историко-географическая привязка",
-                "Пространственное описание",
-                "Правовые основания",
-                "Статус территории",
-                "Внутренняя структура",
-                "Примечания / Особые отметки"
-            ].join("\t"));
+                '№ п/п',
+                'Реестровый идентификатор',
+                'Наименование',
+                'Категория и уровень',
+                'Административный центр',
+                'Историко-географическая привязка',
+                'Пространственное описание',
+                'Правовые основания',
+                'Статус территории',
+                'Внутренняя структура',
+                'Примечания / Особые отметки'
+            ].join('\t'));
 
-            // Данные
-            Array.from(tableBody.rows).forEach(row => {
+            const dataRows = Array.from(tableBody.rows).filter(row => row.style.display !== 'none');
+            dataRows.forEach(row => {
                 const rowData = [];
                 for (let i = 1; i < row.cells.length; i++) {
-                    let text = row.cells[i].innerText.replace(/\n/g, ' ').trim();
+                    const text = normalizeCellValue(row.cells[i].innerText).replace(/\t/g, ' ');
                     rowData.push(text);
                 }
-                rows.push(rowData.join("\t"));
+                if (!rowData.every(value => value === '')) {
+                    rows.push(rowData.join('\t'));
+                }
             });
 
-            const tsvContent = rows.join("\n");
-            
-            navigator.clipboard.writeText(tsvContent).then(() => {
-                showToast("Данные скопированы! Нажмите Ctrl+V в Google Таблицах");
-            }).catch(err => {
-                showToast("Не удалось скопировать данные");
-            });
+            const tsvContent = rows.join('\n');
+            navigator.clipboard.writeText(tsvContent)
+                .then(() => showToast('Данные скопированы! Нажмите Ctrl+V в Google Таблицах'))
+                .catch(() => showToast('Не удалось скопировать данные'));
         }
 
         function exportToCSV() {
             const rows = [];
-            rows.push(["№", "Наименование показателя", "1", "2", "3", "4", "5", "6", "7", "8", "9"]);
+            rows.push(['№', 'Наименование показателя', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
             rows.push([
-                "№ п/п",
-                "Реестровый идентификатор",
-                "Наименование",
-                "Категория и уровень",
-                "Административный центр",
-                "Историко-географическая привязка",
-                "Пространственное описание",
-                "Правовые основания",
-                "Статус территории",
-                "Внутренняя структура",
-                "Примечания / Особые отметки"
+                '№ п/п',
+                'Реестровый идентификатор',
+                'Наименование',
+                'Категория и уровень',
+                'Административный центр',
+                'Историко-географическая привязка',
+                'Пространственное описание',
+                'Правовые основания',
+                'Статус территории',
+                'Внутренняя структура',
+                'Примечания / Особые отметки'
             ]);
 
             Array.from(tableBody.rows).forEach(row => {
                 const rowData = [];
                 for (let i = 1; i < row.cells.length; i++) {
-                    let text = row.cells[i].innerText.replace(/"/g, '""').trim();
+                    const text = normalizeCellValue(row.cells[i].innerText).replace(/"/g, '""');
                     rowData.push(`"${text}"`);
                 }
-                rows.push(rowData.join(","));
+                if (!rowData.every(value => value === '""')) {
+                    rows.push(rowData.join(','));
+                }
             });
 
-            const csvString = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
-            downloadFile(csvString, "Реестр_АТД_Светлославия.csv", "text/csv;charset=utf-8;");
-            showToast("CSV-файл скачан");
+            const csvString = '\uFEFF' + rows.map(row => row.join(',')).join('\n');
+            downloadFile(csvString, 'Реестр_АТД_Светлославия.csv', 'text/csv;charset=utf-8;');
+            showToast('CSV-файл скачан');
         }
 
         function saveToJSON() {
-            const rowsData = [];
-            Array.from(tableBody.rows).forEach(row => {
-                const rowValues = [];
-                for (let i = 2; i < row.cells.length; i++) {
-                    rowValues.push(row.cells[i].innerText);
-                }
-                rowsData.push(rowValues);
-            });
-
+            const rowsData = getTableData().filter(row => !isRowEmpty(row));
             const jsonStr = JSON.stringify(rowsData, null, 2);
-            downloadFile(jsonStr, "Реестр_АТД_Светлославия_Backup.json", "application/json");
-            showToast("Бэкап JSON скачан");
+            downloadFile(jsonStr, 'Реестр_АТД_Светлославия_Backup.json', 'application/json');
+            showToast('Бэкап JSON скачан');
         }
 
         function loadFromJSON(event) {
@@ -574,16 +645,16 @@
                 try {
                     const data = JSON.parse(e.target.result);
                     if (Array.isArray(data)) {
-                        tableBody.innerHTML = '';
-                        data.forEach((rowVals, idx) => {
-                            tableBody.appendChild(createRowData(idx + 1, rowVals));
-                        });
-                        reindexRows();
+                        const normalised = data.map(row => Array.from({ length: 10 }, (_, idx) => normalizeCellValue(row[idx] ?? '')));
+                        renderRows(normalised);
                         autoSave();
-                        showToast("Данные успешно импортированы!");
+                        showToast('Данные успешно импортированы!');
+                    } else {
+                        throw new Error('Некорректный JSON');
                     }
                 } catch (err) {
-                    showToast("Ошибка чтения JSON-файла");
+                    console.error(err);
+                    showToast('Ошибка чтения JSON-файла');
                 }
             };
             reader.readAsText(file);
@@ -592,19 +663,20 @@
 
         function downloadFile(content, fileName, mimeType) {
             const blob = new Blob([content], { type: mimeType });
-            const link = document.createElement("a");
-            const url = URL.createURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", fileName);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function filterTable() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
             Array.from(tableBody.rows).forEach(row => {
-                let match = false;
+                let match = !query;
                 for (let i = 2; i < row.cells.length; i++) {
                     if (row.cells[i].innerText.toLowerCase().includes(query)) {
                         match = true;
@@ -616,26 +688,26 @@
         }
 
         function clearTable() {
-            if (confirm('Вы уверены, что хотите очистить всю таблицу?')) {
-                tableBody.innerHTML = '';
-                for (let i = 1; i <= 3; i++) {
-                    tableBody.appendChild(createRowData(i));
-                }
-                reindexRows();
-                autoSave();
-                showToast("Таблица очищена");
+            if (!confirm('Вы уверены, что хотите очистить всю таблицу?')) return;
+            tableBody.innerHTML = '';
+            const rowsToCreate = 3;
+            for (let i = 1; i <= rowsToCreate; i++) {
+                tableBody.appendChild(createRowData(i));
             }
+            reindexRows();
+            autoSave();
+            showToast('Таблица очищена');
         }
 
         function showToast(text) {
             statusToastText.innerText = text;
             statusToast.classList.add('visible');
-            setTimeout(() => {
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
                 statusToast.classList.remove('visible');
             }, 3000);
         }
 
-        // Инициализация при старте
         window.addEventListener('DOMContentLoaded', loadFromLocalStorage);
     </script>
 </body>
