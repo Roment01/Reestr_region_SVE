@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Общедоступный реестр АТД</title>
+  <style>
+    :root { --navy:#1f4e78; --border:#cbd5e1; --muted:#64748b; --bg:#f1f5f9; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:20px; background:linear-gradient(180deg,#f8fafc,var(--bg)); color:#1e293b; font-family:Arial,sans-serif; }
+    .header { background:#fff; border-left:6px solid var(--navy); border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 4px 12px #0f172a12; }
+    h1 { margin:0 0 8px; color:var(--navy); font-size:clamp(20px,5vw,30px); }
+    .muted { color:var(--muted); font-size:13px; }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    button, a { border:0; border-radius:8px; padding:10px 14px; font:inherit; font-weight:600; text-decoration:none; cursor:pointer; }
+    button { background:var(--navy); color:#fff; }
+    a { background:#fff; color:#334155; border:1px solid var(--border); }
+    input { flex:1 1 220px; min-width:180px; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font:inherit; }
+    .table-wrap { overflow:auto; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:0 4px 12px #0f172a12; }
+    table { width:100%; min-width:1100px; border-collapse:collapse; font-size:13px; }
+    th,td { border:1px solid var(--border); padding:9px 10px; text-align:left; vertical-align:top; }
+    th { position:sticky; top:0; background:var(--navy); color:#fff; z-index:1; }
+    tr:nth-child(even) td { background:#f8fafc; }
+    .empty { padding:30px; text-align:center; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>Общедоступный реестр АТД Республики Светлославия</h1>
+    <div id="publishedInfo" class="muted">Загрузка опубликованных данных…</div>
+  </header>
+  <div class="toolbar">
+    <input id="search" type="search" placeholder="Поиск по реестру…" aria-label="Поиск по реестру">
+    <button type="button" onclick="loadRegistry()">Обновить</button>
+    <a href="./">Перейти к редактированию</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr id="head"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+    <div id="empty" class="empty" hidden>Опубликованных записей пока нет.</div>
+  </div>
+  <script>
+    const fallbackHeaders = ['№ п/п','Реестровый идентификатор','Наименование','Категория и уровень','Административный центр','Историко-географическая привязка','Пространственное описание','Правовые основания','Статус территории','Внутренняя структура','Примечания / Особые отметки'];
+    let headers = fallbackHeaders;
+    let rows = [];
+    const clean = value => String(value ?? '').replace(/\r?\n/g, ' ').trim();
+
+    async function loadRegistry() {
+      const info = document.getElementById('publishedInfo');
+      try {
+        const response = await fetch('./published-registry.json?ts=' + Date.now(), { cache: 'no-store' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        const published = await response.json();
+        headers = Array.isArray(published.headers) && published.headers.length ? published.headers : fallbackHeaders;
+        rows = Array.isArray(published.rows) ? published.rows : [];
+        const date = published.publishedAt ? new Date(published.publishedAt).toLocaleString('ru-RU') : 'данные ещё не опубликованы';
+        info.textContent = `Последнее обновление: ${date}. Записей: ${rows.length}`;
+        render();
+      } catch (error) {
+        info.textContent = 'Не удалось загрузить опубликованный реестр.';
+        document.getElementById('empty').hidden = false;
+        console.error(error);
+      }
+    }
+
+    function render() {
+      const query = document.getElementById('search').value.trim().toLowerCase();
+      document.getElementById('head').innerHTML = headers.map(header => `<th>${escapeHtml(header)}</th>`).join('');
+      const visible = rows.filter(row => row.some(value => clean(value).toLowerCase().includes(query)));
+      document.getElementById('body').innerHTML = visible.map(row => '<tr>' + headers.map((_, index) => `<td>${escapeHtml(row[index])}</td>`).join('') + '</tr>').join('');
+      document.getElementById('empty').hidden = visible.length !== 0;
+    }
+
+    function escapeHtml(value) {
+      return clean(value).replace(/[&<>"']/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character]));
+    }
+
+    document.getElementById('search').addEventListener('input', render);
+    loadRegistry();
+  </script>
+</body>
+</html>
