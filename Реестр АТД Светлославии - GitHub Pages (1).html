@@ -19,6 +19,7 @@
             --accent-green: #16a34a;
             --accent-red: #dc2626;
             --accent-blue: #2563eb;
+            --accent-orange: #f59e0b;
             --surface: #ffffff;
             --bg: #f1f5f9;
             --muted: #64748b;
@@ -191,6 +192,36 @@
             font-size: 13px;
         }
 
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            padding: 12px 14px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-navy);
+        }
+
         .table-wrapper {
             background-color: var(--surface);
             border-radius: 14px;
@@ -205,7 +236,7 @@
             border-collapse: collapse;
             font-size: 13px;
             text-align: left;
-            min-width: 1500px;
+            min-width: 1600px;
         }
 
         thead {
@@ -264,23 +295,54 @@
         }
 
         td.action-col {
-            text-align: center;
-            width: 42px;
+            width: 122px;
             background-color: #f8fafc;
+            text-align: center;
+            padding: 6px 4px;
         }
 
-        .btn-del-row {
-            background: transparent;
-            border: none;
-            color: #94a3b8;
+        .row-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .mini-btn {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            color: #475569;
             cursor: pointer;
-            padding: 4px;
-            font-size: 14px;
-            transition: color 0.2s ease;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            line-height: 1;
         }
 
-        .btn-del-row:hover {
+        .mini-btn:hover {
+            background: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .mini-btn.danger:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
             color: var(--accent-red);
+        }
+
+        .mini-btn.primary:hover {
+            background: #eff6ff;
+            border-color: #93c5fd;
+            color: var(--accent-blue);
+        }
+
+        .mini-btn.warning:hover {
+            background: #fff7ed;
+            border-color: #fdba74;
+            color: var(--accent-orange);
         }
 
         .footer-info {
@@ -351,6 +413,10 @@
                 flex: 1 1 100%;
                 margin-left: 0;
             }
+
+            .stats-panel {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
         }
     </style>
 </head>
@@ -359,7 +425,7 @@
     <div class="header-container">
         <div>
             <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
-            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий, пригодный для ведения, экспорта и архивного хранения данных.</p>
+            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий, предназначенный для хранения, редактирования, экспорта и архивного использования регистра.</p>
         </div>
         <div class="badge-gh">
             <i class="fa-brands fa-github"></i> GitHub Pages Ready
@@ -377,10 +443,10 @@
             <i class="fa-solid fa-file-csv"></i> Экспорт CSV
         </button>
         <button class="btn btn-secondary" onclick="saveToJSON()">
-            <i class="fa-solid fa-download"></i> Сохранить бэкап (JSON)
+            <i class="fa-solid fa-download"></i> Бэкап JSON
         </button>
         <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
-            <i class="fa-solid fa-upload"></i> Загрузить (JSON)
+            <i class="fa-solid fa-upload"></i> Загрузить JSON
         </button>
         <input type="file" id="fileInput" class="file-input-hidden" accept=".json" onchange="loadFromJSON(event)">
         <button class="btn btn-danger" onclick="clearTable()">
@@ -393,11 +459,30 @@
         </div>
     </div>
 
+    <div class="stats-panel">
+        <div class="stat-card">
+            <div class="stat-label">Записей</div>
+            <div class="stat-value" id="statTotalRows">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Заполнено</div>
+            <div class="stat-value" id="statFilledCells">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Пусто</div>
+            <div class="stat-value" id="statEmptyCells">0</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Показаны</div>
+            <div class="stat-value" id="statVisibleRows">0</div>
+        </div>
+    </div>
+
     <div class="table-wrapper">
         <table id="registryTable">
             <thead>
                 <tr class="header-row-numbers">
-                    <th style="width: 40px;"></th>
+                    <th style="width: 110px;">Действия</th>
                     <th style="width: 50px;">№</th>
                     <th>Наименование показателя</th>
                     <th>1</th>
@@ -411,7 +496,7 @@
                     <th>9</th>
                 </tr>
                 <tr class="header-row-titles">
-                    <th></th>
+                    <th>Действия</th>
                     <th>№ п/п</th>
                     <th style="min-width: 180px;">Реестровый идентификатор</th>
                     <th style="min-width: 200px;">Наименование</th>
@@ -430,7 +515,7 @@
     </div>
 
     <div class="footer-info">
-        <span><i class="fa-solid fa-floppy-disk"></i> Изменения сохраняются автоматически в вашем брау��ере</span>
+        <span><i class="fa-solid fa-floppy-disk"></i> Изменения сохраняются автоматически в вашем браузере</span>
         <span id="rowCountDisplay">Всего записей: 0</span>
     </div>
 
@@ -456,13 +541,68 @@
             return !rowValues.some(value => normalizeCellValue(value).length > 0);
         }
 
+        function getRowValues(row) {
+            const values = [];
+            for (let i = 2; i < row.cells.length; i++) {
+                values.push(normalizeCellValue(row.cells[i].innerText));
+            }
+            return values;
+        }
+
+        function createActionsCell() {
+            const td = document.createElement('td');
+            td.className = 'action-col';
+
+            const actions = document.createElement('div');
+            actions.className = 'row-actions';
+
+            const upBtn = document.createElement('button');
+            upBtn.type = 'button';
+            upBtn.className = 'mini-btn primary';
+            upBtn.title = 'Поднять строку';
+            upBtn.innerHTML = '<i class="fa-solid fa-arrow-up"></i>';
+            upBtn.onclick = function () {
+                moveRow(this.closest('tr'), -1);
+            };
+
+            const downBtn = document.createElement('button');
+            downBtn.type = 'button';
+            downBtn.className = 'mini-btn primary';
+            downBtn.title = 'Опустить строку';
+            downBtn.innerHTML = '<i class="fa-solid fa-arrow-down"></i>';
+            downBtn.onclick = function () {
+                moveRow(this.closest('tr'), 1);
+            };
+
+            const copyBtn = document.createElement('button');
+            copyBtn.type = 'button';
+            copyBtn.className = 'mini-btn warning';
+            copyBtn.title = 'Дублировать строку';
+            copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+            copyBtn.onclick = function () {
+                duplicateRow(this.closest('tr'));
+            };
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'mini-btn danger';
+            deleteBtn.title = 'Удалить строку';
+            deleteBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            deleteBtn.onclick = function () {
+                deleteRow(this.closest('tr'));
+            };
+
+            actions.appendChild(upBtn);
+            actions.appendChild(downBtn);
+            actions.appendChild(copyBtn);
+            actions.appendChild(deleteBtn);
+            td.appendChild(actions);
+            return td;
+        }
+
         function createRowData(index, values = Array(10).fill('')) {
             const tr = document.createElement('tr');
-
-            const tdAction = document.createElement('td');
-            tdAction.className = 'action-col';
-            tdAction.innerHTML = '<button class="btn-del-row" onclick="deleteRow(this)" title="Удалить строку"><i class="fa-solid fa-xmark"></i></button>';
-            tr.appendChild(tdAction);
+            tr.appendChild(createActionsCell());
 
             const tdNum = document.createElement('td');
             tdNum.className = 'col-num';
@@ -489,21 +629,53 @@
             });
             reindexRows();
             updateRowCount();
+            updateStats();
         }
 
         function addRow(values = Array(10).fill('')) {
             const nextIdx = tableBody.rows.length + 1;
             tableBody.appendChild(createRowData(nextIdx, values));
             updateRowCount();
+            updateStats();
             autoSave();
         }
 
-        function deleteRow(btn) {
-            const row = btn.closest('tr');
+        function deleteRow(row) {
             if (!row) return;
             row.remove();
             reindexRows();
             autoSave();
+            updateStats();
+        }
+
+        function duplicateRow(row) {
+            if (!row) return;
+            const values = getRowValues(row);
+            const nextIdx = tableBody.rows.length + 1;
+            tableBody.appendChild(createRowData(nextIdx, values));
+            reindexRows();
+            autoSave();
+            updateStats();
+            showToast('Строка дублирована');
+        }
+
+        function moveRow(row, direction) {
+            if (!row) return;
+            const rows = Array.from(tableBody.rows);
+            const index = rows.indexOf(row);
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= rows.length) return;
+
+            const targetRow = rows[targetIndex];
+            if (direction < 0) {
+                tableBody.insertBefore(row, targetRow);
+            } else {
+                tableBody.insertBefore(targetRow, row);
+            }
+
+            reindexRows();
+            autoSave();
+            updateStats();
         }
 
         function reindexRows() {
@@ -515,6 +687,27 @@
 
         function updateRowCount() {
             document.getElementById('rowCountDisplay').innerText = `Всего записей: ${tableBody.rows.length}`;
+        }
+
+        function updateStats() {
+            const rows = Array.from(tableBody.rows);
+            const visibleRows = rows.filter(row => row.style.display !== 'none');
+            const filledCells = rows.reduce((count, row) => {
+                let rowFilled = 0;
+                for (let i = 2; i < row.cells.length; i++) {
+                    if (normalizeCellValue(row.cells[i].innerText).length > 0) {
+                        rowFilled += 1;
+                    }
+                }
+                return count + rowFilled;
+            }, 0);
+            const totalCells = rows.length * 10;
+            const emptyCells = totalCells - filledCells;
+
+            document.getElementById('statTotalRows').innerText = rows.length;
+            document.getElementById('statFilledCells').innerText = filledCells;
+            document.getElementById('statEmptyCells').innerText = emptyCells;
+            document.getElementById('statVisibleRows').innerText = visibleRows.length;
         }
 
         function getTableData() {
@@ -532,6 +725,7 @@
         function autoSave() {
             const rowsData = getTableData().filter(row => !isRowEmpty(row));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(rowsData));
+            updateStats();
         }
 
         function loadFromLocalStorage() {
@@ -555,10 +749,7 @@
                 tableBody.appendChild(createRowData(i));
             }
             updateRowCount();
-        }
-
-        function getVisibleRows() {
-            return Array.from(tableBody.rows).filter(row => row.style.display !== 'none');
+            updateStats();
         }
 
         function copyForGoogleSheets() {
@@ -685,17 +876,18 @@
                 }
                 row.style.display = match ? '' : 'none';
             });
+            updateStats();
         }
 
         function clearTable() {
             if (!confirm('Вы уверены, что хотите очистить всю таблицу?')) return;
             tableBody.innerHTML = '';
-            const rowsToCreate = 3;
-            for (let i = 1; i <= rowsToCreate; i++) {
+            for (let i = 1; i <= 3; i++) {
                 tableBody.appendChild(createRowData(i));
             }
             reindexRows();
             autoSave();
+            updateStats();
             showToast('Таблица очищена');
         }
 
