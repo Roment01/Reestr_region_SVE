@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -424,7 +425,7 @@
 
     <div class="header-container">
         <div>
-            <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
+            <h1 class="header-title">Государственный реестр АТД Рес��ублики Светлославия</h1>
             <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий, предназначенный для хранения, редактирования, экспорта и архивного использования регистра.</p>
         </div>
         <div class="badge-gh">
@@ -436,8 +437,11 @@
         <button class="btn btn-primary" onclick="addRow()">
             <i class="fa-solid fa-plus"></i> Добавить строку
         </button>
-        <button class="btn btn-success" onclick="copyForGoogleSheets()">
-            <i class="fa-solid fa-copy"></i> Скопировать для Google Таблиц
+        <button class="btn btn-success" onclick="exportToGoogleSheets()">
+            <i class="fa-solid fa-google"></i> Экспорт в Google Sheets
+        </button>
+        <button class="btn btn-secondary" onclick="exportToExcel()">
+            <i class="fa-solid fa-file-excel"></i> Скачать Excel
         </button>
         <button class="btn btn-secondary" onclick="exportToCSV()">
             <i class="fa-solid fa-file-csv"></i> Экспорт CSV
@@ -531,6 +535,20 @@
         const statusToastText = document.getElementById('statusToastText');
 
         const DEFAULT_EMPTY_ROWS = 5;
+        const COLUMN_HEADERS = [
+            '№ п/п',
+            'Реестровый идентификатор',
+            'Наименование',
+            'Категория и уровень',
+            'Административный центр',
+            'Историко-географическая привязка',
+            'Пространственное описание',
+            'Правовые основания',
+            'Статус территории',
+            'Внутренняя структура',
+            'Примечания / Особые отметки'
+        ];
+
         let toastTimer = null;
 
         function normalizeCellValue(value) {
@@ -752,79 +770,102 @@
             updateStats();
         }
 
-        function copyForGoogleSheets() {
-            const rows = [];
-            rows.push(['№', 'Наименование показателя', '1', '2', '3', '4', '5', '6', '7', '8', '9'].join('\t'));
-            rows.push([
-                '№ п/п',
-                'Реестровый идентификатор',
-                'Наименование',
-                'Категория и уровень',
-                'Административный центр',
-                'Историко-географическая привязка',
-                'Пространственное описание',
-                'Правовые основания',
-                'Статус территории',
-                'Внутренняя структура',
-                'Примечания / Особые отметки'
-            ].join('\t'));
-
+        function getExportData() {
             const dataRows = Array.from(tableBody.rows).filter(row => row.style.display !== 'none');
+            const exportData = [COLUMN_HEADERS];
+            
             dataRows.forEach(row => {
                 const rowData = [];
                 for (let i = 1; i < row.cells.length; i++) {
-                    const text = normalizeCellValue(row.cells[i].innerText).replace(/\t/g, ' ');
+                    const text = normalizeCellValue(row.cells[i].innerText);
                     rowData.push(text);
                 }
                 if (!rowData.every(value => value === '')) {
-                    rows.push(rowData.join('\t'));
+                    exportData.push(rowData);
                 }
             });
+            
+            return exportData;
+        }
 
-            const tsvContent = rows.join('\n');
+        function exportToGoogleSheets() {
+            const data = getExportData();
+            const tsvContent = data.map(row => row.join('\t')).join('\n');
+            
             navigator.clipboard.writeText(tsvContent)
-                .then(() => showToast('Данные скопированы! Нажмите Ctrl+V в Google Таблицах'))
-                .catch(() => showToast('Не удалось скопировать данные'));
+                .then(() => {
+                    showToast('✓ Данные скопированы! Откройте Google Sheets и вставьте (Ctrl+V)');
+                })
+                .catch(() => {
+                    showToast('✗ Ошибка копирования. Попробуйте ещё раз');
+                });
+        }
+
+        function exportToExcel() {
+            try {
+                const data = getExportData();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                
+                // Установка ширины колонок
+                ws['!cols'] = [
+                    { wch: 12 }, // № п/п
+                    { wch: 20 }, // Реестровый идентификатор
+                    { wch: 25 }, // Наименование
+                    { wch: 18 }, // Категория и уровень
+                    { wch: 18 }, // Административный центр
+                    { wch: 22 }, // Историко-географическая привязка
+                    { wch: 25 }, // Пространственное описание
+                    { wch: 20 }, // Правовые основания
+                    { wch: 22 }, // Статус территории
+                    { wch: 20 }, // Внутренняя структура
+                    { wch: 20 }  // Примечания
+                ];
+
+                // Форматирование заголовков
+                const headerStyle = {
+                    fill: { fgColor: { rgb: 'FF1f4e78' } },
+                    font: { bold: true, color: { rgb: 'FFFFFFFF' } },
+                    alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+                };
+
+                for (let i = 0; i < COLUMN_HEADERS.length; i++) {
+                    const cellRef = XLSX.utils.encode_col(i) + '1';
+                    if (ws[cellRef]) ws[cellRef].s = headerStyle;
+                }
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Реестр АТД');
+                XLSX.writeFile(wb, `Реестр_АТД_Светлославия_${new Date().toISOString().split('T')[0]}.xlsx`);
+                
+                showToast('✓ Excel файл скачан');
+            } catch (err) {
+                console.error(err);
+                showToast('✗ Ошибка при экспорте в Excel');
+            }
         }
 
         function exportToCSV() {
-            const rows = [];
-            rows.push(['№', 'Наименование показателя', '1', '2', '3', '4', '5', '6', '7', '8', '9']);
-            rows.push([
-                '№ п/п',
-                'Реестровый идентификатор',
-                'Наименование',
-                'Категория и уровень',
-                'Административный центр',
-                'Историко-географическая привязка',
-                'Пространственное описание',
-                'Правовые основания',
-                'Статус территории',
-                'Внутренняя структура',
-                'Примечания / Особые отметки'
-            ]);
+            try {
+                const data = getExportData();
+                const csv = data.map(row => 
+                    row.map(cell => `"${cell.replace(/"/g, '""')}"`)
+                        .join(',')
+                ).join('\n');
 
-            Array.from(tableBody.rows).forEach(row => {
-                const rowData = [];
-                for (let i = 1; i < row.cells.length; i++) {
-                    const text = normalizeCellValue(row.cells[i].innerText).replace(/"/g, '""');
-                    rowData.push(`"${text}"`);
-                }
-                if (!rowData.every(value => value === '""')) {
-                    rows.push(rowData.join(','));
-                }
-            });
-
-            const csvString = '\uFEFF' + rows.map(row => row.join(',')).join('\n');
-            downloadFile(csvString, 'Реестр_АТД_Светлославия.csv', 'text/csv;charset=utf-8;');
-            showToast('CSV-файл скачан');
+                const csvString = '\uFEFF' + csv;
+                downloadFile(csvString, `Реестр_АТД_Светлославия_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
+                showToast('✓ CSV-файл скачан');
+            } catch (err) {
+                console.error(err);
+                showToast('✗ Ошибка при экспорте CSV');
+            }
         }
 
         function saveToJSON() {
             const rowsData = getTableData().filter(row => !isRowEmpty(row));
             const jsonStr = JSON.stringify(rowsData, null, 2);
-            downloadFile(jsonStr, 'Реестр_АТД_Светлославия_Backup.json', 'application/json');
-            showToast('Бэкап JSON скачан');
+            downloadFile(jsonStr, `Реестр_АТД_Светлославия_Backup_${new Date().toISOString().split('T')[0]}.json`, 'application/json');
+            showToast('✓ Бэкап JSON скачан');
         }
 
         function loadFromJSON(event) {
@@ -839,13 +880,13 @@
                         const normalised = data.map(row => Array.from({ length: 10 }, (_, idx) => normalizeCellValue(row[idx] ?? '')));
                         renderRows(normalised);
                         autoSave();
-                        showToast('Данные успешно импортированы!');
+                        showToast('✓ Данные успешно импортированы!');
                     } else {
                         throw new Error('Некорректный JSON');
                     }
                 } catch (err) {
                     console.error(err);
-                    showToast('Ошибка чтения JSON-файла');
+                    showToast('✗ Ошибка чтения JSON-файла');
                 }
             };
             reader.readAsText(file);
