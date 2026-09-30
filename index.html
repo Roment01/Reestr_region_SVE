@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
         :root {
@@ -436,7 +436,7 @@
     <div class="header-container">
         <div>
             <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
-            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий с поддержкой экспорта в Excel, CSV �� Google Sheets</p>
+            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий с поддержкой экспорта в Google Sheets</p>
         </div>
         <div class="badge-gh">
             <i class="fa-brands fa-github"></i> GitHub Pages Ready
@@ -570,7 +570,7 @@
             '№ п/п',
             'Реестровый идентификатор',
             'Наименование',
-            'К��тегория и уровень',
+            'Категория и уровень',
             'Административный центр',
             'Историко-географическая привязка',
             'Пространственное описание',
@@ -581,15 +581,11 @@
         ];
 
         const GOOGLE_CONFIG = {
-            CLIENT_ID: '422244530148-2e6upt4acmdalh43oermm1j0jdagccnl.apps.googleusercontent.com',
-            SCOPES: [
-                'https://www.googleapis.com/auth/spreadsheets',
-                'https://www.googleapis.com/auth/drive'
-            ]
+            CLIENT_ID: '422244530148-2e6upt4acmdalh43oermm1j0jdagccnl.apps.googleusercontent.com'
         };
 
         let toastTimer = null;
-        let googleAuth = null;
+        let accessToken = localStorage.getItem('gsheet_access_token');
         let currentSheetId = localStorage.getItem('current_gsheet_id');
         let currentSheetName = localStorage.getItem('current_gsheet_name');
 
@@ -637,7 +633,7 @@
             const copyBtn = document.createElement('button');
             copyBtn.type = 'button';
             copyBtn.className = 'mini-btn warning';
-            copyBtn.title = 'Дублировать строку';
+            copyBtn.title = 'Дубл��ровать строку';
             copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
             copyBtn.onclick = function () {
                 duplicateRow(this.closest('tr'));
@@ -969,13 +965,13 @@
         }
 
         function updateGoogleSheetsUI() {
-            const signedIn = !!(googleAuth && googleAuth.isSignedIn && googleAuth.isSignedIn.get && googleAuth.isSignedIn.get());
+            const hasToken = !!accessToken;
             const hasSheet = !!currentSheetId;
 
-            document.getElementById('updateGoogleSheetBtn').style.display = signedIn && hasSheet ? 'inline-flex' : 'none';
-            document.getElementById('disconnectGoogleSheetBtn').style.display = signedIn && hasSheet ? 'inline-flex' : 'none';
+            document.getElementById('updateGoogleSheetBtn').style.display = hasToken && hasSheet ? 'inline-flex' : 'none';
+            document.getElementById('disconnectGoogleSheetBtn').style.display = hasToken && hasSheet ? 'inline-flex' : 'none';
 
-            if (signedIn && hasSheet) {
+            if (hasToken && hasSheet) {
                 document.getElementById('googleSheetsBtnText').innerText = '🔄 Создать новую Google Sheet';
             } else {
                 document.getElementById('googleSheetsBtnText').innerText = '🔗 Создать / открыть Google Sheet';
@@ -988,64 +984,37 @@
             document.getElementById('googleSheetModal').style.display = 'flex';
         }
 
-        async function initializeGoogleSheets() {
-            if (!window.gapi) {
-                console.warn('Google API не загрузился');
-                setTimeout(initializeGoogleSheets, 1000);
-                return;
-            }
-
-            try {
-                await new Promise((resolve, reject) => {
-                    gapi.load('client:auth2', () => {
-                        gapi.client.init({
-                            clientId: GOOGLE_CONFIG.CLIENT_ID,
-                            scope: GOOGLE_CONFIG.SCOPES.join(' ')
-                        }).then(resolve).catch(reject);
-                    });
-                });
-
-                googleAuth = gapi.auth2.getAuthInstance();
-                if (googleAuth) {
-                    googleAuth.isSignedIn.listen(updateGoogleSheetsUI);
-                }
-                updateGoogleSheetsUI();
-                console.log('✓ Google Sheets API инициализирован');
-            } catch (error) {
-                console.error('Ошибка инициализации Google Sheets:', error);
-                showToast('⚠ Ошибка инициализации Google Sheets');
-            }
-        }
+        window.handleGoogleSignIn = function(response) {
+            console.log('✓ Google Sign-In успешен');
+            accessToken = response.credential;
+            localStorage.setItem('gsheet_access_token', accessToken);
+            updateGoogleSheetsUI();
+            
+            // Продолжаем создание Google Sheet
+            createNewGoogleSheet();
+        };
 
         async function handleGoogleSheetsAction() {
-            if (!window.gapi) {
-                showToast('✗ Google API не загрузился');
+            if (!accessToken) {
+                showToast('⏳ Авторизация через Google...');
+                // Google Identity Services автоматически покажет кнопку входа
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CONFIG.CLIENT_ID,
+                    callback: window.handleGoogleSignIn,
+                    scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive'
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById('googleSheetsMainBtn'),
+                    { theme: 'outline', size: 'large' }
+                );
                 return;
             }
 
-            try {
-                if (!googleAuth) {
-                    await initializeGoogleSheets();
-                }
-
-                const signedIn = googleAuth && googleAuth.isSignedIn && googleAuth.isSignedIn.get();
-                if (!signedIn) {
-                    showToast('⏳ Авторизация в Google...');
-                    await googleAuth.signIn();
-                    showToast('✓ Авторизация успешна');
-                }
-
-                if (!currentSheetId) {
-                    await createNewGoogleSheet();
-                } else {
-                    await updateGoogleSheet();
-                    showGoogleSheetModal(currentSheetId);
-                }
-
-                updateGoogleSheetsUI();
-            } catch (error) {
-                console.error('Ошибка работы с Google Sheets:', error);
-                showToast('✗ Ошибка: ' + (error.error?.message || error.message || 'неизвестная ошибка'));
+            if (!currentSheetId) {
+                await createNewGoogleSheet();
+            } else {
+                await updateGoogleSheet();
+                showGoogleSheetModal(currentSheetId);
             }
         }
 
@@ -1053,52 +1022,43 @@
             try {
                 showToast('⏳ Создаю Google Sheet...');
 
-                const spreadsheet = await gapi.client.sheets.spreadsheets.create({
-                    resource: {
+                const response = await fetch('https://sheets.googleapis.com/v4/spreadsheets', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
                         properties: {
                             title: `Реестр АТД Светлославия — ${new Date().toLocaleDateString('ru-RU')}`
-                        },
-                        sheets: [{
-                            properties: {
-                                title: 'Реестр АТД',
-                                gridProperties: {
-                                    rowCount: 2000,
-                                    columnCount: 12
-                                }
-                            }
-                        }]
-                    }
+                        }
+                    })
                 });
 
-                currentSheetId = spreadsheet.result.spreadsheetId;
-                currentSheetName = 'Реестр АТД';
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                currentSheetId = result.spreadsheetId;
+                currentSheetName = 'Лист1';
                 localStorage.setItem('current_gsheet_id', currentSheetId);
                 localStorage.setItem('current_gsheet_name', currentSheetName);
 
-                try {
-                    await gapi.client.drive.permissions.create({
-                        fileId: currentSheetId,
-                        resource: {
-                            role: 'reader',
-                            type: 'anyone'
-                        }
-                    });
-                } catch (permissionError) {
-                    console.warn('Не удалось открыть доступ по ссылке:', permissionError);
-                }
-
                 await updateGoogleSheet();
                 showGoogleSheetModal(currentSheetId);
-                showToast('✓ Google Sheet создана и заполнена!');
+                showToast('✓ Google Sheet создана!');
+                updateGoogleSheetsUI();
+
             } catch (error) {
                 console.error('Ошибка создания Google Sheet:', error);
-                showToast('✗ Ошибка создания Google Sheet: ' + (error.error?.message || error.message || ''));
+                showToast('✗ Ошибка: ' + error.message);
             }
         }
 
         async function updateGoogleSheet() {
-            if (!currentSheetId) {
-                showToast('✗ Сначала создайте Google Sheet');
+            if (!currentSheetId || !accessToken) {
+                showToast('✗ Ошибка: нет доступа к Google Sheet');
                 return;
             }
 
@@ -1107,53 +1067,29 @@
 
                 const values = getExportData();
 
-                await gapi.client.sheets.spreadsheets.values.clear({
-                    spreadsheetId: currentSheetId,
-                    range: 'Реестр АТД!A1:K1000'
-                });
-
-                await gapi.client.sheets.spreadsheets.values.update({
-                    spreadsheetId: currentSheetId,
-                    range: 'Реестр АТД!A1:K' + values.length,
-                    valueInputOption: 'RAW',
-                    resource: {
-                        values: values
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${currentSheetId}/values/'Лист1'!A1?valueInputOption=RAW`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            values: values
+                        })
                     }
-                });
+                );
 
-                await gapi.client.sheets.spreadsheets.batchUpdate({
-                    spreadsheetId: currentSheetId,
-                    resource: {
-                        requests: [{
-                            repeatCell: {
-                                range: {
-                                    sheetId: 0,
-                                    startRowIndex: 0,
-                                    endRowIndex: 1
-                                },
-                                cell: {
-                                    userEnteredFormat: {
-                                        backgroundColor: { red: 0.12, green: 0.31, blue: 0.47 },
-                                        textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true },
-                                        horizontalAlignment: 'CENTER',
-                                        verticalAlignment: 'MIDDLE',
-                                        wrapStrategy: 'WRAP'
-                                    }
-                                },
-                                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)'
-                            }
-                        }]
-                    }
-                });
-
-                if (currentSheetId) {
-                    document.getElementById('googleSheetsBtnText').innerText = '🔄 Создать новую Google Sheet';
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 showToast('✓ Google Sheet обновлена!');
+
             } catch (error) {
-                console.error('Ошибка обновления Google Sheet:', error);
-                showToast('✗ Ошибка обновления: ' + (error.error?.message || error.message || ''));
+                console.error('Ошибка обновления:', error);
+                showToast('✗ Ошибка обновления: ' + error.message);
             }
         }
 
@@ -1164,23 +1100,17 @@
 
             currentSheetId = null;
             currentSheetName = null;
+            accessToken = null;
             localStorage.removeItem('current_gsheet_id');
             localStorage.removeItem('current_gsheet_name');
+            localStorage.removeItem('gsheet_access_token');
             updateGoogleSheetsUI();
             showToast('✓ Google Sheet отключена');
         }
 
-        function prepareGoogleSheetsOnLoad() {
-            if (currentSheetId) {
-                document.getElementById('googleSheetsBtnText').innerText = '🔄 Создать новую Google Sheet';
-            }
-            updateGoogleSheetsUI();
-        }
-
         window.addEventListener('DOMContentLoaded', function() {
             loadFromLocalStorage();
-            prepareGoogleSheetsOnLoad();
-            initializeGoogleSheets();
+            updateGoogleSheetsUI();
         });
     </script>
 </body>
