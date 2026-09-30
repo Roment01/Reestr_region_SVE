@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
 
     <style>
         :root {
@@ -138,6 +139,15 @@
 
         .btn-success:hover {
             background-color: #15803d;
+        }
+
+        .btn-info {
+            background-color: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        .btn-info:hover {
+            background-color: #1d4ed8;
         }
 
         .btn-secondary {
@@ -425,8 +435,8 @@
 
     <div class="header-container">
         <div>
-            <h1 class="header-title">Государственный реестр АТД Рес��ублики Светлославия</h1>
-            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий, предназначенный для хранения, редактирования, экспорта и архивного использования регистра.</p>
+            <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
+            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий с поддержкой экспорта в Excel, CSV и Google Sheets</p>
         </div>
         <div class="badge-gh">
             <i class="fa-brands fa-github"></i> GitHub Pages Ready
@@ -437,9 +447,19 @@
         <button class="btn btn-primary" onclick="addRow()">
             <i class="fa-solid fa-plus"></i> Добавить строку
         </button>
-        <button class="btn btn-success" onclick="exportToGoogleSheets()">
-            <i class="fa-solid fa-google"></i> Экспорт в Google Sheets
+
+        <button class="btn btn-success" id="googleSheetsMainBtn" onclick="handleGoogleSheetsAction()">
+            <i class="fa-solid fa-google"></i> <span id="googleSheetsBtnText">Создать / открыть Google Sheet</span>
         </button>
+
+        <button class="btn btn-info" id="updateGoogleSheetBtn" onclick="updateGoogleSheet()" style="display: none;">
+            <i class="fa-solid fa-rotate"></i> Обновить Google Sheet
+        </button>
+
+        <button class="btn btn-secondary" id="disconnectGoogleSheetBtn" onclick="disconnectGoogleSheets()" style="display: none;">
+            <i class="fa-solid fa-unlink"></i> Отключить
+        </button>
+
         <button class="btn btn-secondary" onclick="exportToExcel()">
             <i class="fa-solid fa-file-excel"></i> Скачать Excel
         </button>
@@ -528,6 +548,17 @@
         <span id="statusToastText">Данные успешно скопированы!</span>
     </div>
 
+    <div id="googleSheetModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.55); z-index: 1000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 16px; max-width: 520px; width: calc(100% - 32px); padding: 28px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.2); text-align: center;">
+            <h2 style="margin-bottom: 12px; color: #1f4e78; font-size: 24px;">Google Sheets готов</h2>
+            <p style="margin-bottom: 20px; color: #475569; line-height: 1.5;">
+                Ссылка на таблицу создана. Вы можете открыть её и обновлять данные одной кнопкой.
+            </p>
+            <a id="googleSheetLink" href="#" target="_blank" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 12px 20px; border-radius: 10px; font-weight: 600; margin-right: 8px;">Открыть таблицу</a>
+            <button type="button" onclick="document.getElementById('googleSheetModal').style.display='none'" style="padding: 12px 18px; background: #e2e8f0; border: none; border-radius: 10px; cursor: pointer; font-weight: 600;">Закрыть</button>
+        </div>
+    </div>
+
     <script>
         const STORAGE_KEY = 'svetloslavia_atd_registry_data';
         const tableBody = document.getElementById('tableBody');
@@ -549,7 +580,18 @@
             'Примечания / Особые отметки'
         ];
 
+        const GOOGLE_CONFIG = {
+            CLIENT_ID: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+            SCOPES: [
+                'https://www.googleapis.com/auth/spreadsheets',
+                'https://www.googleapis.com/auth/drive'
+            ]
+        };
+
         let toastTimer = null;
+        let googleAuth = null;
+        let currentSheetId = localStorage.getItem('current_gsheet_id');
+        let currentSheetName = localStorage.getItem('current_gsheet_name');
 
         function normalizeCellValue(value) {
             return String(value ?? '').replace(/\r?\n/g, ' ').trim();
@@ -773,7 +815,7 @@
         function getExportData() {
             const dataRows = Array.from(tableBody.rows).filter(row => row.style.display !== 'none');
             const exportData = [COLUMN_HEADERS];
-            
+
             dataRows.forEach(row => {
                 const rowData = [];
                 for (let i = 1; i < row.cells.length; i++) {
@@ -784,14 +826,14 @@
                     exportData.push(rowData);
                 }
             });
-            
+
             return exportData;
         }
 
         function exportToGoogleSheets() {
             const data = getExportData();
             const tsvContent = data.map(row => row.join('\t')).join('\n');
-            
+
             navigator.clipboard.writeText(tsvContent)
                 .then(() => {
                     showToast('✓ Данные скопированы! Откройте Google Sheets и вставьте (Ctrl+V)');
@@ -805,23 +847,21 @@
             try {
                 const data = getExportData();
                 const ws = XLSX.utils.aoa_to_sheet(data);
-                
-                // Установка ширины колонок
+
                 ws['!cols'] = [
-                    { wch: 12 }, // № п/п
-                    { wch: 20 }, // Реестровый идентификатор
-                    { wch: 25 }, // Наименование
-                    { wch: 18 }, // Категория и уровень
-                    { wch: 18 }, // Административный центр
-                    { wch: 22 }, // Историко-географическая привязка
-                    { wch: 25 }, // Пространственное описание
-                    { wch: 20 }, // Правовые основания
-                    { wch: 22 }, // Статус территории
-                    { wch: 20 }, // Внутренняя структура
-                    { wch: 20 }  // Примечания
+                    { wch: 12 },
+                    { wch: 20 },
+                    { wch: 25 },
+                    { wch: 18 },
+                    { wch: 18 },
+                    { wch: 22 },
+                    { wch: 25 },
+                    { wch: 20 },
+                    { wch: 22 },
+                    { wch: 20 },
+                    { wch: 20 }
                 ];
 
-                // Форматирование заголовков
                 const headerStyle = {
                     fill: { fgColor: { rgb: 'FF1f4e78' } },
                     font: { bold: true, color: { rgb: 'FFFFFFFF' } },
@@ -836,7 +876,7 @@
                 const wb = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(wb, ws, 'Реестр АТД');
                 XLSX.writeFile(wb, `Реестр_АТД_Светлославия_${new Date().toISOString().split('T')[0]}.xlsx`);
-                
+
                 showToast('✓ Excel файл скачан');
             } catch (err) {
                 console.error(err);
@@ -847,7 +887,7 @@
         function exportToCSV() {
             try {
                 const data = getExportData();
-                const csv = data.map(row => 
+                const csv = data.map(row =>
                     row.map(cell => `"${cell.replace(/"/g, '""')}"`)
                         .join(',')
                 ).join('\n');
@@ -941,7 +981,215 @@
             }, 3000);
         }
 
-        window.addEventListener('DOMContentLoaded', loadFromLocalStorage);
+        function updateGoogleSheetsUI() {
+            const signedIn = !!(googleAuth && googleAuth.isSignedIn && googleAuth.isSignedIn.get && googleAuth.isSignedIn.get());
+            const hasSheet = !!currentSheetId;
+
+            document.getElementById('updateGoogleSheetBtn').style.display = signedIn && hasSheet ? 'inline-flex' : 'none';
+            document.getElementById('disconnectGoogleSheetBtn').style.display = signedIn && hasSheet ? 'inline-flex' : 'none';
+
+            if (signedIn && hasSheet) {
+                document.getElementById('googleSheetsBtnText').innerText = 'Создать новую Google Sheet';
+            } else {
+                document.getElementById('googleSheetsBtnText').innerText = 'Создать / открыть Google Sheet';
+            }
+        }
+
+        function showGoogleSheetModal(sheetId) {
+            const link = `https://docs.google.com/spreadsheets/d/${sheetId}/edit`;
+            document.getElementById('googleSheetLink').href = link;
+            document.getElementById('googleSheetModal').style.display = 'flex';
+        }
+
+        async function initializeGoogleSheets() {
+            if (!window.gapi) {
+                console.warn('Google API not loaded yet');
+                return;
+            }
+
+            try {
+                await new Promise((resolve, reject) => {
+                    gapi.load('client:auth2', () => {
+                        gapi.client.init({
+                            clientId: GOOGLE_CONFIG.CLIENT_ID,
+                            scope: GOOGLE_CONFIG.SCOPES.join(' ')
+                        }).then(resolve).catch(reject);
+                    });
+                });
+
+                googleAuth = gapi.auth2.getAuthInstance();
+                if (googleAuth) {
+                    googleAuth.isSignedIn.listen(updateGoogleSheetsUI);
+                }
+                updateGoogleSheetsUI();
+            } catch (error) {
+                console.error('Ошибка инициализации Google Sheets:', error);
+            }
+        }
+
+        async function handleGoogleSheetsAction() {
+            if (!window.gapi) {
+                showToast('✗ Google API не загрузился');
+                return;
+            }
+
+            try {
+                if (!googleAuth) {
+                    await initializeGoogleSheets();
+                }
+
+                const signedIn = googleAuth && googleAuth.isSignedIn && googleAuth.isSignedIn.get();
+                if (!signedIn) {
+                    await googleAuth.signIn();
+                }
+
+                if (!currentSheetId) {
+                    await createNewGoogleSheet();
+                } else {
+                    await updateGoogleSheet();
+                    showGoogleSheetModal(currentSheetId);
+                }
+
+                updateGoogleSheetsUI();
+            } catch (error) {
+                console.error('Ошибка работы с Google Sheets:', error);
+                showToast('✗ Ошибка доступа к Google Sheets');
+            }
+        }
+
+        async function createNewGoogleSheet() {
+            try {
+                showToast('⏳ Создаю Google Sheet...');
+
+                const spreadsheet = await gapi.client.sheets.spreadsheets.create({
+                    resource: {
+                        properties: {
+                            title: `Реестр АТД Светлославия — ${new Date().toLocaleDateString('ru-RU')}`
+                        },
+                        sheets: [{
+                            properties: {
+                                title: 'Реестр АТД',
+                                gridProperties: {
+                                    rowCount: 2000,
+                                    columnCount: 12
+                                }
+                            }
+                        }]
+                    }
+                });
+
+                currentSheetId = spreadsheet.result.spreadsheetId;
+                currentSheetName = 'Реестр АТД';
+                localStorage.setItem('current_gsheet_id', currentSheetId);
+                localStorage.setItem('current_gsheet_name', currentSheetName);
+
+                try {
+                    await gapi.client.drive.permissions.create({
+                        fileId: currentSheetId,
+                        resource: {
+                            role: 'reader',
+                            type: 'anyone'
+                        }
+                    });
+                } catch (permissionError) {
+                    console.warn('Не удалось открыть доступ по ссылке:', permissionError);
+                }
+
+                await updateGoogleSheet();
+                showGoogleSheetModal(currentSheetId);
+                showToast('✓ Google Sheet создана и заполнена');
+            } catch (error) {
+                console.error('Ошибка создания Google Sheet:', error);
+                showToast('✗ Не удалось создать Google Sheet');
+            }
+        }
+
+        async function updateGoogleSheet() {
+            if (!currentSheetId) {
+                showToast('✗ Сначала создайте Google Sheet');
+                return;
+            }
+
+            try {
+                showToast('⏳ Обновляю Google Sheet...');
+
+                const values = getExportData();
+
+                await gapi.client.sheets.spreadsheets.values.clear({
+                    spreadsheetId: currentSheetId,
+                    range: 'Реестр АТД!A1:K1000'
+                });
+
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: currentSheetId,
+                    range: 'Реестр АТД!A1:K' + values.length,
+                    valueInputOption: 'RAW',
+                    resource: {
+                        values: values
+                    }
+                });
+
+                await gapi.client.sheets.spreadsheets.batchUpdate({
+                    spreadsheetId: currentSheetId,
+                    resource: {
+                        requests: [{
+                            repeatCell: {
+                                range: {
+                                    sheetId: 0,
+                                    startRowIndex: 0,
+                                    endRowIndex: 1
+                                },
+                                cell: {
+                                    userEnteredFormat: {
+                                        backgroundColor: { red: 0.12, green: 0.31, blue: 0.47 },
+                                        textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true },
+                                        horizontalAlignment: 'CENTER',
+                                        verticalAlignment: 'MIDDLE',
+                                        wrapStrategy: 'WRAP'
+                                    }
+                                },
+                                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy)'
+                            }
+                        }]
+                    }
+                });
+
+                if (currentSheetId) {
+                    document.getElementById('googleSheetsBtnText').innerText = 'Создать новую Google Sheet';
+                }
+
+                showToast('✓ Google Sheet обновлён');
+            } catch (error) {
+                console.error('Ошибка обновления Google Sheet:', error);
+                showToast('✗ Ошибка обновления Google Sheet');
+            }
+        }
+
+        function disconnectGoogleSheets() {
+            if (!confirm('Отключить текущую Google Sheet?')) {
+                return;
+            }
+
+            currentSheetId = null;
+            currentSheetName = null;
+            localStorage.removeItem('current_gsheet_id');
+            localStorage.removeItem('current_gsheet_name');
+            updateGoogleSheetsUI();
+            showToast('✓ Google Sheet отключена');
+        }
+
+        function prepareGoogleSheetsOnLoad() {
+            if (currentSheetId) {
+                document.getElementById('googleSheetsBtnText').innerText = 'Создать новую Google Sheet';
+            }
+            updateGoogleSheetsUI();
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            prepareGoogleSheetsOnLoad();
+            initializeGoogleSheets();
+        });
     </script>
 </body>
 </html>
