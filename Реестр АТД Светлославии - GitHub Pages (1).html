@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Государственный реестр АТД Республики Светлославия</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-navy: #1f4e78;
+            --primary-navy-dark: #153754;
+            --header-bg-num: #e2e8f0;
+            --border-color: #cbd5e1;
+            --hover-bg: #f8fafc;
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --accent-blue: #2563eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .header-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 24px 32px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 20px;
+            border-left: 6px solid var(--primary-navy);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-navy);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        .badge-gh {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+            background: #ffffff;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-navy);
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-navy-dark);
+        }
+
+        .btn-success {
+            background-color: var(--accent-green);
+            color: #ffffff;
+        }
+        .btn-success:hover {
+            background-color: #15803d;
+        }
+
+        .btn-secondary {
+            background-color: #ffffff;
+            color: #334155;
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        .btn-danger {
+            background-color: #ffffff;
+            color: var(--accent-red);
+            border: 1px solid #fca5a5;
+        }
+        .btn-danger:hover {
+            background-color: #fef2f2;
+        }
+
+        .search-box {
+            position: relative;
+            margin-left: auto;
+            min-width: 240px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px 8px 34px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .status-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #0f172a;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 100;
+        }
+
+        .status-toast.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .table-wrapper {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            max-height: 68vh;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            text-align: left;
+            min-width: 1500px;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr.header-row-numbers th {
+            background-color: var(--header-bg-num);
+            color: #475569;
+            font-weight: 700;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        tr.header-row-titles th {
+            background-color: var(--primary-navy);
+            color: #ffffff;
+            font-weight: 600;
+            text-align: center;
+            border: 1px solid #1e3a8a;
+            padding: 12px;
+            vertical-align: middle;
+            line-height: 1.3;
+        }
+
+        tbody td {
+            border: 1px solid var(--border-color);
+            padding: 8px 10px;
+            vertical-align: top;
+            background-color: #ffffff;
+            outline: none;
+            transition: background-color 0.15s ease;
+        }
+
+        tbody td[contenteditable="true"]:focus {
+            background-color: #eff6ff;
+            box-shadow: inset 0 0 0 2px #3b82f6;
+        }
+
+        tbody tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        td.col-num {
+            text-align: center;
+            font-weight: 600;
+            color: #64748b;
+            background-color: #f8fafc;
+            user-select: none;
+            width: 50px;
+        }
+
+        td.action-col {
+            text-align: center;
+            width: 40px;
+        }
+
+        .btn-del-row {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+        }
+        .btn-del-row:hover {
+            color: var(--accent-red);
+        }
+
+        .footer-info {
+            margin-top: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #64748b;
+            padding: 0 4px;
+        }
+
+        .file-input-hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div>
+            <h1 class="header-title">Государственный реестр АТД Республики Светлославия</h1>
+            <p class="header-subtitle">Автономный бланк учета административно-территориальных единиц и суверенных территорий</p>
+        </div>
+        <div class="badge-gh">
+            <i class="fa-brands fa-github"></i> GitHub Pages Ready
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn btn-primary" onclick="addRow()">
+            <i class="fa-solid fa-plus"></i> Добавить строку
+        </button>
+        <button class="btn btn-success" onclick="copyForGoogleSheets()">
+            <i class="fa-solid fa-copy"></i> Скопировать для Google Таблиц
+        </button>
+        <button class="btn btn-secondary" onclick="exportToCSV()">
+            <i class="fa-solid fa-file-csv"></i> Экспорт CSV
+        </button>
+        <button class="btn btn-secondary" onclick="saveToJSON()">
+            <i class="fa-solid fa-download"></i> Сохранить бэкап (JSON)
+        </button>
+        <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+            <i class="fa-solid fa-upload"></i> Загрузить (JSON)
+        </button>
+        <input type="file" id="fileInput" class="file-input-hidden" accept=".json" onchange="loadFromJSON(event)">
+        <button class="btn btn-danger" onclick="clearTable()">
+            <i class="fa-solid fa-trash-can"></i> Очистить
+        </button>
+
+        <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="searchInput" placeholder="Поиск по реестру..." oninput="filterTable()">
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="registryTable">
+            <thead>
+                <!-- Строка 1: Номера показателей -->
+                <tr class="header-row-numbers">
+                    <th style="width: 40px;"></th>
+                    <th style="width: 50px;">№</th>
+                    <th>Наименование показателя</th>
+                    <th>1</th>
+                    <th>2</th>
+                    <th>3</th>
+                    <th>4</th>
+                    <th>5</th>
+                    <th>6</th>
+                    <th>7</th>
+                    <th>8</th>
+                    <th>9</th>
+                </tr>
+                <!-- Строка 2: Названия столбцов -->
+                <tr class="header-row-titles">
+                    <th></th>
+                    <th>№ п/п</th>
+                    <th style="min-width: 180px;">Реестровый идентификатор</th>
+                    <th style="min-width: 200px;">Наименование</th>
+                    <th style="min-width: 160px;">Категория и уровень</th>
+                    <th style="min-width: 160px;">Административный центр</th>
+                    <th style="min-width: 200px;">Историко-географическая привязка</th>
+                    <th style="min-width: 220px;">Пространственное описание</th>
+                    <th style="min-width: 180px;">Правовые основания</th>
+                    <th style="min-width: 220px;">Статус территории</th>
+                    <th style="min-width: 180px;">Внутренняя структура</th>
+                    <th style="min-width: 180px;">Примечания / Особые отметки</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Динамические строки таблицы -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer-info">
+        <span><i class="fa-solid fa-floppy-disk"></i> Изменения сохраняются автоматически в вашем браузере</span>
+        <span id="rowCountDisplay">Всего записей: 0</span>
+    </div>
+
+    <div id="statusToast" class="status-toast">
+        <i class="fa-solid fa-circle-check" style="color: #4ade80;"></i>
+        <span id="statusToastText">Данные успешно скопированы!</span>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'svetloslavia_atd_registry_data';
+        const tableBody = document.getElementById('tableBody');
+        const statusToast = document.getElementById('statusToast');
+        const statusToastText = document.getElementById('statusToastText');
+
+        function createRowData(index, values = Array(10).fill('')) {
+            const tr = document.createElement('tr');
+            
+            // Action Cell (Delete)
+            const tdAction = document.createElement('td');
+            tdAction.className = 'action-col';
+            tdAction.innerHTML = `<button class="btn-del-row" onclick="deleteRow(this)" title="Удалить строку"><i class="fa-solid fa-xmark"></i></button>`;
+            tr.appendChild(tdAction);
+
+            // Index Cell
+            const tdNum = document.createElement('td');
+            tdNum.className = 'col-num';
+            tdNum.innerText = index;
+            tr.appendChild(tdNum);
+
+            // 10 Editable Cells (ID + 9 Metrics)
+            for (let i = 0; i < 10; i++) {
+                const td = document.createElement('td');
+                td.contentEditable = "true";
+                td.innerText = values[i] || '';
+                td.addEventListener('input', autoSave);
+                tr.appendChild(td);
+            }
+
+            return tr;
+        }
+
+        function addRow(values = Array(10).fill('')) {
+            const nextIdx = tableBody.rows.length + 1;
+            const tr = createRowData(nextIdx, values);
+            tableBody.appendChild(tr);
+            updateRowCount();
+            autoSave();
+        }
+
+        function deleteRow(btn) {
+            const row = btn.closest('tr');
+            row.remove();
+            reindexRows();
+            autoSave();
+        }
+
+        function reindexRows() {
+            Array.from(tableBody.rows).forEach((row, idx) => {
+                row.cells[1].innerText = idx + 1;
+            });
+            updateRowCount();
+        }
+
+        function updateRowCount() {
+            document.getElementById('rowCountDisplay').innerText = `Всего записей: ${tableBody.rows.length}`;
+        }
+
+        function autoSave() {
+            const rowsData = [];
+            Array.from(tableBody.rows).forEach(row => {
+                const rowValues = [];
+                for (let i = 2; i < row.cells.length; i++) {
+                    rowValues.push(row.cells[i].innerText);
+                }
+                rowsData.push(rowValues);
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(rowsData));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            tableBody.innerHTML = '';
+            
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        parsed.forEach((rowVals, idx) => {
+                            tableBody.appendChild(createRowData(idx + 1, rowVals));
+                        });
+                        updateRowCount();
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Ошибка загрузки данных:', e);
+                }
+            }
+
+            // Инициализация 5 пустых строк по умолчанию
+            for (let i = 1; i <= 5; i++) {
+                tableBody.appendChild(createRowData(i));
+            }
+            updateRowCount();
+        }
+
+        function copyForGoogleSheets() {
+            const rows = [];
+            
+            // Строка 1: Номера показателей
+            rows.push(["№", "Наименование показателя", "1", "2", "3", "4", "5", "6", "7", "8", "9"].join("\t"));
+
+            // Строка 2: Названия столбцов
+            rows.push([
+                "№ п/п",
+                "Реестровый идентификатор",
+                "Наименование",
+                "Категория и уровень",
+                "Административный центр",
+                "Историко-географическая привязка",
+                "Пространственное описание",
+                "Правовые основания",
+                "Статус территории",
+                "Внутренняя структура",
+                "Примечания / Особые отметки"
+            ].join("\t"));
+
+            // Данные
+            Array.from(tableBody.rows).forEach(row => {
+                const rowData = [];
+                for (let i = 1; i < row.cells.length; i++) {
+                    let text = row.cells[i].innerText.replace(/\n/g, ' ').trim();
+                    rowData.push(text);
+                }
+                rows.push(rowData.join("\t"));
+            });
+
+            const tsvContent = rows.join("\n");
+            
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                showToast("Данные скопированы! Нажмите Ctrl+V в Google Таблицах");
+            }).catch(err => {
+                showToast("Не удалось скопировать данные");
+            });
+        }
+
+        function exportToCSV() {
+            const rows = [];
+            rows.push(["№", "Наименование показателя", "1", "2", "3", "4", "5", "6", "7", "8", "9"]);
+            rows.push([
+                "№ п/п",
+                "Реестровый идентификатор",
+                "Наименование",
+                "Категория и уровень",
+                "Административный центр",
+                "Историко-географическая привязка",
+                "Пространственное описание",
+                "Правовые основания",
+                "Статус территории",
+                "Внутренняя структура",
+                "Примечания / Особые отметки"
+            ]);
+
+            Array.from(tableBody.rows).forEach(row => {
+                const rowData = [];
+                for (let i = 1; i < row.cells.length; i++) {
+                    let text = row.cells[i].innerText.replace(/"/g, '""').trim();
+                    rowData.push(`"${text}"`);
+                }
+                rows.push(rowData.join(","));
+            });
+
+            const csvString = "\uFEFF" + rows.map(e => e.join(",")).join("\n");
+            downloadFile(csvString, "Реестр_АТД_Светлославия.csv", "text/csv;charset=utf-8;");
+            showToast("CSV-файл скачан");
+        }
+
+        function saveToJSON() {
+            const rowsData = [];
+            Array.from(tableBody.rows).forEach(row => {
+                const rowValues = [];
+                for (let i = 2; i < row.cells.length; i++) {
+                    rowValues.push(row.cells[i].innerText);
+                }
+                rowsData.push(rowValues);
+            });
+
+            const jsonStr = JSON.stringify(rowsData, null, 2);
+            downloadFile(jsonStr, "Реестр_АТД_Светлославия_Backup.json", "application/json");
+            showToast("Бэкап JSON скачан");
+        }
+
+        function loadFromJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data)) {
+                        tableBody.innerHTML = '';
+                        data.forEach((rowVals, idx) => {
+                            tableBody.appendChild(createRowData(idx + 1, rowVals));
+                        });
+                        reindexRows();
+                        autoSave();
+                        showToast("Данные успешно импортированы!");
+                    }
+                } catch (err) {
+                    showToast("Ошибка чтения JSON-файла");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function downloadFile(content, fileName, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const link = document.createElement("a");
+            const url = URL.createURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            Array.from(tableBody.rows).forEach(row => {
+                let match = false;
+                for (let i = 2; i < row.cells.length; i++) {
+                    if (row.cells[i].innerText.toLowerCase().includes(query)) {
+                        match = true;
+                        break;
+                    }
+                }
+                row.style.display = match ? '' : 'none';
+            });
+        }
+
+        function clearTable() {
+            if (confirm('Вы уверены, что хотите очистить всю таблицу?')) {
+                tableBody.innerHTML = '';
+                for (let i = 1; i <= 3; i++) {
+                    tableBody.appendChild(createRowData(i));
+                }
+                reindexRows();
+                autoSave();
+                showToast("Таблица очищена");
+            }
+        }
+
+        function showToast(text) {
+            statusToastText.innerText = text;
+            statusToast.classList.add('visible');
+            setTimeout(() => {
+                statusToast.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Инициализация при старте
+        window.addEventListener('DOMContentLoaded', loadFromLocalStorage);
+    </script>
+</body>
+</html>
