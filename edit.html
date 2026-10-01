@@ -5,44 +5,266 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Редактор реестра АТД</title>
   <style>
-    :root{--navy:#1f4e78;--dark:#153754;--border:#cbd5e1;--bg:#f1f5f9;--muted:#64748b}
+    :root{--navy:#1f4e78;--dark:#153754;--border:#cbd5e1;--bg:#f1f5f9;--muted:#64748b;--danger:#b91c1c}
     *{box-sizing:border-box}body{margin:0;padding:20px;background:linear-gradient(180deg,#f8fafc,var(--bg));color:#1e293b;font-family:Arial,sans-serif}
-    .card{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 12px #0f172a12;border-left:6px solid var(--navy)}h1{margin:0 0 8px;color:var(--navy);font-size:clamp(20px,5vw,30px)}p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer}.primary{background:var(--navy);color:#fff}.primary:hover{background:var(--dark)}.secondary{background:#fff;color:#334155;border:1px solid var(--border)}
-    .search{flex:1 1 220px;min-width:180px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit}.table-wrap{overflow:auto;max-height:68vh;background:#fff;border:1px solid var(--border);border-radius:12px}table{width:100%;min-width:1450px;border-collapse:collapse;font-size:13px}th,td{border:1px solid var(--border);padding:8px 10px;vertical-align:top}th{background:var(--navy);color:#fff;position:sticky;top:0;z-index:1}td[contenteditable=true]:focus{outline:2px solid #3b82f6;background:#eff6ff}.num,.actions{text-align:center;background:#f8fafc}.actions button{border:1px solid var(--border);background:#fff;border-radius:5px;margin:1px;cursor:pointer;padding:4px 6px}.footer{color:var(--muted);font-size:12px;margin-top:12px}
+    .card{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 12px rgba(15,23,42,.08);border-left:6px solid var(--navy)}
+    h1{margin:0 0 8px;color:var(--navy);font-size:clamp(1.8rem, 3vw, 2.6rem)}
+    p{margin:0;color:var(--muted)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+    .primary{background:var(--navy);color:#fff}.success{background:#15803d;color:#fff}.secondary{background:#e2e8f0;color:#0f172a}.danger{background:var(--danger);color:#fff}
+    .search{flex:1 1 220px;min-width:180px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit}
+    .table-wrap{overflow:auto;max-height:68vh;background:#fff;border:1px solid var(--border);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:1200px}th,td{border:1px solid var(--border);padding:8px 10px;vertical-align:top;text-align:left}
+    th{background:#f8fafc;color:#0f172a;position:sticky;top:0;z-index:1}.num{font-weight:700;color:var(--navy);width:48px;text-align:center}.actions{width:110px}.actions button{padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:#f8fafc;cursor:pointer}
+    .footer{margin-top:14px;padding:10px 14px;background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;color:#1e3a8a}
+    .overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;z-index:10}
+    .modal{background:#fff;padding:24px 22px;border-radius:16px;box-shadow:0 12px 40px rgba(15,23,42,.28);width:min(420px, 90vw)}
+    .modal h2{margin:0 0 12px;color:var(--navy)}
+    .modal input{width:100%;padding:12px;border:1px solid var(--border);border-radius:8px;font:inherit;margin-bottom:12px}
+    .modal button{width:100%;padding:12px;border:0;border-radius:8px;background:var(--navy);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+    .error{color:var(--danger);min-height:20px;margin:0 0 8px;font-size:.95rem}
   </style>
 </head>
 <body>
-  <header class="card"><h1>Редактор реестра АТД Республики Светлославия</h1><p>Данные сохраняются в этом браузере. Кнопка «Опубликовать» делает текущие данные доступными на странице public на этом устройстве.</p></header>
-  <div class="toolbar">
-    <button class="btn primary" onclick="addRow()">＋ Добавить строку</button>
-    <button class="btn primary" onclick="publish()">Опубликовать реестр</button>
-    <a class="btn secondary" href="./public.html">Открыть public</a>
-    <button class="btn secondary" onclick="downloadJson()">Скачать JSON</button>
-    <button class="btn secondary" onclick="document.getElementById('file').click()">Загрузить JSON</button>
-    <input id="file" type="file" accept="application/json" hidden onchange="loadJson(event)">
-    <input id="search" class="search" placeholder="Поиск…" oninput="renderFilter()">
+  <div id="lockScreen" class="overlay">
+    <div class="modal">
+      <h2>Доступ к редактору</h2>
+      <input id="passwordInput" type="password" placeholder="Введите пароль" autocomplete="off">
+      <button id="unlockBtn" type="button">Войти</button>
+      <p class="error" id="lockError"></p>
+    </div>
   </div>
-  <div class="table-wrap"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div>
-  <div class="footer" id="status"></div>
-<script>
-const KEY='reestr_region_sve_registry';
-const HEADERS=['№ п/п','Реестровый идентификатор','Наименование','Категория и уровень','Административный центр','Историко-географическая привязка','Пространственное описание','Правовые основания','Статус территории','Внутренняя структура','Примечания / Особые отметки'];
-let rows=JSON.parse(localStorage.getItem(KEY)||'[]');
-const body=document.getElementById('body');
-function clean(v){return String(v??'').replace(/\r?\n/g,' ').trim()}
-function save(){localStorage.setItem(KEY,JSON.stringify(rows));status(`Сохранено записей: ${rows.length}`)}
-function render(){document.getElementById('head').innerHTML=HEADERS.map(h=>`<th>${h}</th>`).join('')+'<th>Действия</th>';body.innerHTML=rows.map((row,i)=>`<tr><td class="num">${i+1}</td>${HEADERS.slice(1).map((_,j)=>`<td contenteditable="true" data-row="${i}" data-col="${j}">${esc(row[j]||'')}</td>`).join('')}<td class="actions"><button onclick="duplicate(${i})">⧉</button><button onclick="removeRow(${i})">×</button></td></tr>`).join('');document.querySelectorAll('[contenteditable]').forEach(cell=>cell.addEventListener('input',e=>{rows[+e.target.dataset.row][+e.target.dataset.col]=clean(e.target.innerText);save()}));renderFilter()}
-function renderFilter(){const q=clean(document.getElementById('search').value).toLowerCase();[...body.rows].forEach(tr=>tr.style.display=!q||tr.innerText.toLowerCase().includes(q)?'':'none')}
-function addRow(){rows.push(Array(10).fill(''));save();render()}
-function duplicate(i){rows.splice(i+1,0,[...rows[i]]);save();render()}
-function removeRow(i){if(confirm('Удалить строку?')){rows.splice(i,1);save();render()}}
-function publish(){save();status('Реестр опубликован. Откройте страницу public.');window.open('./public.html','_blank')}
-function downloadJson(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(rows,null,2)],{type:'application/json'}));a.download='reestr-region-sve.json';a.click()}
-function loadJson(e){const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const data=JSON.parse(r.result);if(!Array.isArray(data))throw Error();rows=data.map(row=>Array.from({length:10},(_,i)=>clean(row[i])));save();render()}catch{alert('Некорректный JSON')}};r.readAsText(file);e.target.value=''}
-function status(text){document.getElementById('status').textContent=text}
-function esc(v){return clean(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-if(!rows.length)rows=[Array(10).fill('')];render();status('Редактор готов');
-</script>
+
+  <div id="app" style="display:none;">
+    <header class="card">
+      <h1>Редактор реестра АТД Республики Светлославия</h1>
+      <p>Данные сохраняются в браузере. Кнопка «Опубликовать в GitHub» откроет страницу GitHub с готовым JSON-файлом.</p>
+    </header>
+
+    <div class="toolbar">
+      <button class="btn primary" onclick="addRow()">＋ Добавить строку</button>
+      <button class="btn success" onclick="publishToGithub()">📤 Опубликовать в GitHub</button>
+      <a class="btn secondary" href="./public.html" target="_blank" rel="noopener">👁️ Открыть public</a>
+      <button class="btn secondary" onclick="downloadJson()">⬇️ Скачать JSON</button>
+      <button class="btn secondary" onclick="document.getElementById('file').click()">⬆️ Загрузить JSON</button>
+      <input id="file" type="file" accept="application/json" hidden onchange="loadJson(event)">
+      <input id="search" class="search" placeholder="Поиск…" oninput="renderFilter()">
+      <button class="btn danger" onclick="logout()">🚪 Выход</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr id="head"></tr>
+        </thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+
+    <div class="footer" id="status"></div>
+  </div>
+
+  <script>
+    const EDIT_PASSWORD = 'inik7';
+    const KEY = 'reestr_region_sve_registry';
+    const HEADERS = ['№ п/п','Реестровый идентификатор','Наименование','Категория и уровень','Административный центр','Историко-географическая привязка','Пространственное описание','Правовые основания','Статус территории','Внутренняя структура','Примечания / Особые отметки'];
+    const DATA_COLUMNS = HEADERS.slice(1);
+
+    let rows = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const body = document.getElementById('body');
+
+    function clean(value) {
+      return String(value ?? '').replace(/\r?\n/g, ' ').trim();
+    }
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(rows));
+      status(`Сохранено записей: ${rows.length}`);
+    }
+
+    function render() {
+      const head = document.getElementById('head');
+      head.innerHTML = HEADERS.map(h => `<th>${h}</th>`).join('') + '<th>Действия</th>';
+
+      body.innerHTML = rows.map((row, i) => {
+        const cells = DATA_COLUMNS.map((_, j) => `<td contenteditable="true" data-row="${i}" data-col="${j}">${escapeHtml(row[j] || '')}</td>`).join('');
+        return `<tr>
+          <td class="num">${i + 1}</td>
+          ${cells}
+          <td class="actions">
+            <button type="button" onclick="duplicate(${i})">⧉</button>
+            <button type="button" onclick="removeRow(${i})">×</button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      document.querySelectorAll('[contenteditable]').forEach(cell => {
+        cell.addEventListener('input', e => {
+          const row = Number(e.target.dataset.row);
+          const col = Number(e.target.dataset.col);
+          rows[row][col] = clean(e.target.innerText);
+          save();
+        });
+      });
+
+      renderFilter();
+    }
+
+    function renderFilter() {
+      const q = clean(document.getElementById('search').value).toLowerCase();
+      [...body.rows].forEach(tr => {
+        tr.style.display = (!q || tr.innerText.toLowerCase().includes(q)) ? '' : 'none';
+      });
+    }
+
+    function addRow() {
+      rows.push(Array(DATA_COLUMNS.length).fill(''));
+      save();
+      render();
+    }
+
+    function duplicate(i) {
+      rows.splice(i + 1, 0, [...rows[i]]);
+      save();
+      render();
+    }
+
+    function removeRow(i) {
+      if (!confirm('Удалить строку?')) return;
+      rows.splice(i, 1);
+      save();
+      render();
+    }
+
+    async function publishToGithub() {
+      save();
+      const payload = {
+        headers: HEADERS,
+        rows: rows,
+        publishedAt: new Date().toISOString()
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const repoUrl = 'https://github.com/Roment01/Reestr_region_SVE';
+      const path = 'published-registry.json';
+      const rawUrl = `https://raw.githubusercontent.com/Roment01/Reestr_region_SVE/main/${path}?ts=${Date.now()}`;
+
+      let hasFile = false;
+      try {
+        const res = await fetch(rawUrl, { cache: 'no-store' });
+        hasFile = res.ok;
+      } catch (error) {
+        hasFile = false;
+      }
+
+      const encoded = encodeURIComponent(json);
+      const targetUrl = hasFile
+        ? `${repoUrl}/edit/main/${path}?value=${encoded}`
+        : `${repoUrl}/new/main?filename=${encodeURIComponent(path)}&value=${encoded}`;
+
+      status('Открываю GitHub для сохранения публикации...');
+      window.open(targetUrl, '_blank');
+    }
+
+    function downloadJson() {
+      const payload = {
+        headers: HEADERS,
+        rows: rows,
+        publishedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'published-registry.json';
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    function loadJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (data.rows && Array.isArray(data.rows)) {
+            rows = data.rows.map(row => Array.from({ length: DATA_COLUMNS.length }, (_, idx) => clean(row[idx])));
+          } else if (Array.isArray(data)) {
+            rows = data.map(row => Array.from({ length: DATA_COLUMNS.length }, (_, idx) => clean(row[idx])));
+          } else {
+            throw new Error('Некорректный JSON');
+          }
+          save();
+          render();
+        } catch (error) {
+          alert('Ошибка чтения JSON: ' + error.message);
+          console.error(error);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    function escapeHtml(value) {
+      return clean(value).replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      }[char]));
+    }
+
+    function status(text) {
+      document.getElementById('status').textContent = text;
+    }
+
+    function unlockEditor() {
+      const entered = document.getElementById('passwordInput').value;
+      if (entered === EDIT_PASSWORD) {
+        localStorage.setItem('reestr_region_sve_edit_pass', EDIT_PASSWORD);
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        if (!rows.length) {
+          rows = [Array(DATA_COLUMNS.length).fill('')];
+        }
+        render();
+        status('Редактор готов');
+        return;
+      }
+
+      document.getElementById('lockError').textContent = 'Неверный пароль';
+      document.getElementById('passwordInput').value = '';
+    }
+
+    function logout() {
+      localStorage.removeItem('reestr_region_sve_edit_pass');
+      document.getElementById('lockError').textContent = '';
+      document.getElementById('passwordInput').value = '';
+      document.getElementById('lockScreen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('passwordInput').focus();
+    }
+
+    document.getElementById('unlockBtn').addEventListener('click', unlockEditor);
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') unlockEditor();
+    });
+
+    const savedPass = localStorage.getItem('reestr_region_sve_edit_pass');
+    if (savedPass === EDIT_PASSWORD) {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      if (!rows.length) {
+        rows = [Array(DATA_COLUMNS.length).fill('')];
+      }
+      render();
+      status('Редактор готов');
+    } else {
+      document.getElementById('lockScreen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('passwordInput').focus();
+    }
+  </script>
 </body>
 </html>
