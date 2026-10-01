@@ -8,22 +8,22 @@
     :root{--navy:#1f4e78;--dark:#153754;--border:#cbd5e1;--bg:#f1f5f9;--muted:#64748b}
     *{box-sizing:border-box}body{margin:0;padding:20px;background:linear-gradient(180deg,#f8fafc,var(--bg));color:#1e293b;font-family:Arial,sans-serif}
     .card{background:#fff;border-radius:14px;padding:20px;margin-bottom:16px;box-shadow:0 4px 12px #0f172a12;border-left:6px solid var(--navy)}h1{margin:0 0 8px;color:var(--navy);font-size:clamp(20px,5vw,30px)}p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--navy);color:#fff}.primary:hover{background:var(--dark)}.secondary{background:#fff;color:#334155;border:1px solid var(--border)}
-    .search{flex:1 1 220px;min-width:180px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit}.table-wrap{overflow:auto;max-height:68vh;background:#fff;border:1px solid var(--border);border-radius:12px}table{width:100%;min-width:1450px;border-collapse:collapse;font-size:13px}th,td{border:1px solid var(--border);padding:8px 10px;vertical-align:top}th{background:var(--navy);color:#fff;position:sticky;top:0;z-index:1}td[contenteditable=true]:focus{outline:2px solid #3b82f6;background:#eff6ff}.num,.actions{text-align:center;background:#f8fafc}.actions button{border:1px solid var(--border);background:#fff;border-radius:5px;margin:1px;cursor:pointer;padding:4px 6px}.footer{color:var(--muted);font-size:12px;margin-top:12px}.empty-state{padding:18px 0;color:var(--muted)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.btn{border:0;border-radius:8px;padding:10px 14px;font:inherit;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--navy);color:#fff}.primary:hover{background:var(--dark)}.secondary{background:#fff;color:#334155;border:1px solid var(--border)}.success{background:#16a34a;color:#fff}.success:hover{background:#15803d}
+    .search{flex:1 1 220px;min-width:180px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font:inherit}.table-wrap{overflow:auto;max-height:68vh;background:#fff;border:1px solid var(--border);border-radius:12px}table{width:100%;min-width:1450px;border-collapse:collapse;font-size:13px}th,td{border:1px solid var(--border);padding:8px 10px;vertical-align:top}th{background:var(--navy);color:#fff;position:sticky;top:0;z-index:1}td[contenteditable=true]:focus{outline:2px solid #3b82f6;background:#eff6ff}.num,.actions{text-align:center;background:#f8fafc}.actions button{border:1px solid var(--border);background:#fff;border-radius:5px;margin:1px;cursor:pointer;padding:4px 6px}.footer{color:var(--muted);font-size:12px;margin-top:12px}
   </style>
 </head>
 <body>
   <header class="card">
     <h1>Редактор реестра АТД Республики Светлославия</h1>
-    <p>Данные сохраняются в браузере и публикуются на общей публичной странице этого сайта.</p>
+    <p>Данные сохраняются в браузере. Кнопка «Опубликовать в GitHub» откроет страницу GitHub с готовым JSON-файлом, который нужно сохранить коммитом.</p>
   </header>
 
   <div class="toolbar">
     <button class="btn primary" onclick="addRow()">＋ Добавить строку</button>
-    <button class="btn primary" onclick="publish()">Опубликовать реестр</button>
-    <a class="btn secondary" href="./public.html" target="_blank" rel="noopener">Открыть public</a>
-    <button class="btn secondary" onclick="downloadJson()">Скачать JSON</button>
-    <button class="btn secondary" onclick="document.getElementById('file').click()">Загрузить JSON</button>
+    <button class="btn success" onclick="publishToGithub()">📤 Опубликовать в GitHub</button>
+    <a class="btn secondary" href="./public.html" target="_blank" rel="noopener">👁️ Открыть public</a>
+    <button class="btn secondary" onclick="downloadJson()">⬇️ Скачать JSON</button>
+    <button class="btn secondary" onclick="document.getElementById('file').click()">⬆️ Загрузить JSON</button>
     <input id="file" type="file" accept="application/json" hidden onchange="loadJson(event)">
     <input id="search" class="search" placeholder="Поиск…" oninput="renderFilter()">
   </div>
@@ -40,8 +40,8 @@
   <div class="footer" id="status"></div>
 
   <script>
-    const KEY='reestr_region_sve_registry';
-    const HEADERS=['№ п/п','Реестровый идентификатор','Наименование','Категория и уровень','Административный центр','Историко-географическая привязка','Пространственное описание','Правовые основания','Статус территории','Внутренняя структура','Примечания / Особые отметки'];
+    const KEY = 'reestr_region_sve_registry';
+    const HEADERS = ['№ п/п','Реестровый идентификатор','Наименование','Категория и уровень','Административный центр','Историко-географическая привязка','Пространственное описание','Правовые основания','Статус территории','Внутренняя структура','Примечания / Особые отметки'];
 
     let rows = JSON.parse(localStorage.getItem(KEY) || '[]');
     const body = document.getElementById('body');
@@ -109,17 +109,47 @@
       render();
     }
 
-    function publish() {
+    async function publishToGithub() {
       save();
-      status('Реестр опубликован. Откройте страницу public.');
-      window.open('./public.html', '_blank');
+      const payload = {
+        headers: HEADERS,
+        rows: rows,
+        publishedAt: new Date().toISOString()
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const repoUrl = 'https://github.com/Roment01/Reestr_region_SVE';
+      const path = 'published-registry.json';
+
+      const rawUrl = `https://raw.githubusercontent.com/Roment01/Reestr_region_SVE/main/${path}?ts=${Date.now()}`;
+      let hasFile = false;
+
+      try {
+        const res = await fetch(rawUrl, { cache: 'no-store' });
+        hasFile = res.ok;
+      } catch (error) {
+        hasFile = false;
+      }
+
+      const encoded = encodeURIComponent(json);
+      const targetUrl = hasFile
+        ? `${repoUrl}/edit/main/${path}?value=${encoded}`
+        : `${repoUrl}/new/main?filename=${encodeURIComponent(path)}&value=${encoded}`;
+
+      status('Открываю GitHub для сохранения публикации...');
+      window.open(targetUrl, '_blank');
     }
 
     function downloadJson() {
-      const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+      const payload = {
+        headers: HEADERS,
+        rows: rows,
+        publishedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'reestr-region-sve.json';
+      link.download = 'published-registry.json';
       link.click();
       URL.revokeObjectURL(link.href);
     }
@@ -131,12 +161,17 @@
       reader.onload = () => {
         try {
           const data = JSON.parse(reader.result);
-          if (!Array.isArray(data)) throw new Error('JSON must be an array');
-          rows = data.map(row => Array.from({ length: 10 }, (_, idx) => clean(row[idx])));
+          if (data.rows && Array.isArray(data.rows)) {
+            rows = data.rows.map(row => Array.from({ length: 10 }, (_, idx) => clean(row[idx])));
+          } else if (Array.isArray(data)) {
+            rows = data.map(row => Array.from({ length: 10 }, (_, idx) => clean(row[idx])));
+          } else {
+            throw new Error('Некорректный JSON');
+          }
           save();
           render();
         } catch (error) {
-          alert('Некорректный JSON');
+          alert('Ошибка чтения JSON: ' + error.message);
           console.error(error);
         }
       };
@@ -167,3 +202,5 @@
   </script>
 </body>
 </html>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
